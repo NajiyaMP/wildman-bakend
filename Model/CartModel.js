@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const cartSchema = new Schema({
+    userId: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'login', // Reference the login schema for users
+        required: true 
+    },  
     dishes_id: {
         type: Schema.Types.ObjectId,
         ref: 'DishesData',
@@ -16,7 +21,7 @@ const cartSchema = new Schema({
         default: Date.now
     },
     image: [{ type: String }], // Array of image paths or filenames
-    price: { type: Number },
+    newprice: { type: Number },
     dishes: { type: String },
 });
 

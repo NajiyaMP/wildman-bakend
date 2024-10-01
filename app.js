@@ -8,6 +8,8 @@ var cors = require('cors');
 var session = require('express-session');
 var connectDB = require('./config/db');
 const compression = require('compression');
+require('dotenv').config();
+
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');

@@ -20,8 +20,7 @@ exports.postDishes = asyncHandler(async (req, res) => {
     const files = req.files || [];
     const images = new Map();
     console.log(req.body,'this is the body')
-console.log(req.files,'this is the files')
-console.log(req.images,'this is the images')
+    console.log(req.files,'this is the files')
 
     // Group images by color based on field names like 'images_Yellow_0'
     files.forEach((file) => {
@@ -60,7 +59,6 @@ console.log(req.images,'this is the images')
         res.status(500).send('An error occurred while posting the dish');
     }
 });
-
 
 
 
