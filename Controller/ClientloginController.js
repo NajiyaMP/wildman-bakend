@@ -4,32 +4,32 @@ const bcrypt = require('bcrypt');
 
 
 exports.registerClient = async (req, res) => {
-    console.log("Inside Register request");
-    const { username, password ,email} = req.body;
-    console.log(username, password,email);
-  
-    try {
-        const existingUser = await login.findOne({ username });
-        if (existingUser) {
-            return res.status(406).json("User Already exists");
-        } else {
-            // Hash the password before saving
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
-  
-            const newUser = new login({
-                username,
-                email,
-                password: hashedPassword // store hashed password
-            });
-            await newUser.save();
-            return res.status(200).json(newUser);
-        }
-    } catch (err) {
-        return res.status(401).json(err);
-    }
-  };
- 
+  console.log("Inside Register request");
+  const { username, password, email } = req.body;
+  console.log(username, password, email);
+
+  try {
+      const existingUser = await login.findOne({ username });
+      if (existingUser) {
+          return res.status(409).json({ message: "User already exists" }); // Use 409 Conflict
+      } else {
+          const saltRounds = 10;
+          const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+          const newUser = new login({
+              username,
+              email,
+              password: hashedPassword
+          });
+          await newUser.save();
+          return res.status(201).json(newUser); // Use 201 Created
+      }
+  } catch (err) {
+      console.error("Registration error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 exports.loginClient = async (req, res) => {
     console.log("Inside login function");
     const { username, password } = req.body;

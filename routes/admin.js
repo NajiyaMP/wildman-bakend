@@ -353,19 +353,21 @@ router.get('/userwishlistcount',userjwt, wishlistController.countwishlist); // N
 
 // --cart--
 
-router.post('/useraddtocart',userjwt,cartController.postCart);
-router.get('/usergetcart',userjwt, cartController.getCart);
+router.post('/useraddtocart/:id',userjwt,cartController.postCart);
+router.post('/sync-guest-cart',userjwt,cartController.postguestcart);
+
+router.get('/usergetcart/:id',userjwt, cartController.getCart);
 router.put('/userupdateCart/:id',userjwt,cartController.updateCart);
-router.delete('/userdeleteCart/:itemId', userjwt, cartController.deleteCart);
+router.delete('/userdeleteCart/:id', userjwt, cartController.deleteCart);
 router.get('/usercartcount',userjwt,cartController.countCartItems); // New route for count
 
 
 //---cart guest---
-router.post('/postguestcart', cartController.postGuestCart);
-router.get('/getguestcart', cartController.getGuestCart);
-router.put('/putguestcart/:itemId', cartController.updateGuestCart);
-router.delete('/deleteguestcart/:itemId', cartController.deleteGuestCart);
-router.get('/guestcartcount', cartController.countGuestCartItems);
+// router.post('/postguestcart', cartController.postGuestCart);
+// router.get('/getguestcart', cartController.getGuestCart);
+// router.put('/putguestcart/:itemId', cartController.updateGuestCart);
+// router.delete('/deleteguestcart/:itemId', cartController.deleteGuestCart);
+// router.get('/guestcartcount', cartController.countGuestCartItems);
 
 //-----coupon-----
 router.post('/usercoupon',userjwt, couponController.postCoupon);

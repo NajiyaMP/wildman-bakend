@@ -102,22 +102,30 @@ const login=require('../Model/UserLoginModal')
 //   }
 // };
 
+const mongoose = require('mongoose');
+
 exports.getRecentlyViewed = async (req, res) => {
-  try {
-    const userId = req.payload; // Extracted from JWT Middleware
+    try {
+        const userId = req.payload.userId; // Extract userId from the JWT payload
 
-    // Find the user and populate recently viewed dishes
-    const user = await login.findById(userId).populate('recentlyViewed.dishes_id');
+        // Validate if userId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: 'Invalid userId', status: 400 });
+        }
 
-    if (user && user.recentlyViewed.length > 0) {
-      res.status(200).json({ recentlyViewedItems: user.recentlyViewed });
-    } else {
-      res.status(404).json({ message: 'No recently viewed items found for this user', status: 404 });
+        // Find the user and populate recently viewed dishes
+        const user = await logins.findById(userId).populate('recentlyViewed.dishes_id');
+
+        // Check if user exists and has recently viewed items
+        if (user && user.recentlyViewed.length > 0) {
+            return res.status(200).json({ recentlyViewedItems: user.recentlyViewed });
+        } else {
+            return res.status(404).json({ message: 'No recently viewed items found for this user', status: 404 });
+        }
+    } catch (error) {
+        console.error('Error fetching recently viewed items:', error);
+        return res.status(500).json({ message: 'Error fetching recently viewed items', status: 500 });
     }
-  } catch (error) {
-    console.error('Error fetching recently viewed items:', error);
-    res.status(500).json({ message: 'Error fetching recently viewed items', status: 500 });
-  }
 };
 
 
