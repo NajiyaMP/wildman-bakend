@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const login=require('../Model/UserLoginModal')
 const bcrypt = require('bcrypt');
+const asyncHandler = require('express-async-handler');
+
 
 
 exports.registerClient = async (req, res) => {
@@ -70,3 +72,53 @@ exports.loginClient = async (req, res) => {
     });
   };
   
+// Sync guest cart items with user's cart
+exports.syncGuestCart = asyncHandler(async (req, res) => {
+  const userId = req.payload && req.payload.userId; // Extract userId from the decoded JWT payload
+  const { cartItems } = req.body; // Cart items sent from the frontend
+  console.log("Syncing guest cart for userId:", userId); // Log userId for debugging
+
+  if (!userId) {
+    // Handle the case where userId is missing (i.e., guest user)
+    return res.status(400).json({ message: 'Guest user cannot sync without logging in.' });
+  }
+
+  try {
+    // Authenticated user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Find the user's existing cart
+    let userCart = await Cart.findOne({ userId });
+    if (!userCart) {
+      // If no cart exists, create a new one for the user
+      userCart = new Cart({ userId, items: [] });
+    }
+
+    // Sync guest cart items with user's cart
+    cartItems.forEach((guestItem) => {
+      const existingItem = userCart.items.find(
+        (item) => item.productId.toString() === guestItem.productId && item.color === guestItem.color
+      );
+
+      if (existingItem) {
+        // If the item already exists in the user's cart, update the quantity
+        existingItem.quantity += guestItem.quantity;
+      } else {
+        // If the item doesn't exist, add it to the cart
+        userCart.items.push(guestItem);
+      }
+    });
+
+    // Save the updated cart
+    await userCart.save();
+
+    return res.status(200).json({ message: 'Guest cart successfully synced with user cart.' });
+  } catch (error) {
+    console.error("Error syncing guest cart:", error); // Log the error
+    return res.status(500).json({ error: 'Error syncing guest cart.' });
+  }
+});
+

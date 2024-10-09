@@ -25,6 +25,18 @@ const loginSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     },
+  
+    shippingAddresses: [
+      { type: mongoose.Schema.Types.ObjectId, ref: 'Address' },
+    ],
+   
+    orders: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Order' // Link to the order model
+      }
+    ],
+    
    
     cart: [
       {
@@ -52,17 +64,7 @@ const loginSchema = new mongoose.Schema({
       },
     ],
     
-    // Recently viewed items array
-    // recentlyViewed: [
-    //   {
-    //     productId: { type: Schema.Types.ObjectId, ref: 'DishesData', required: true },
-    //     title: { type: String },
-    //     description: { type: String },
-    //     price: { type: Number },
-    //     image: { type: String },
-    //     viewedAt: { type: Date, default: Date.now },
-    //   },
-    // ],
+   
     
   });
 

@@ -1,6 +1,8 @@
 // const RecentlyViewed = require('../Model/Recentlyviewed');
 const Product = require('../Model/DishesModel');
-const login=require('../Model/UserLoginModal')
+const User=require('../Model/UserLoginModal');
+const asyncHandler = require('express-async-handler');
+
 
 // Get recently viewed products by user ID
 // exports.getRecentlyViewed = async (req, res) => {
@@ -102,95 +104,143 @@ const login=require('../Model/UserLoginModal')
 //   }
 // };
 
-const mongoose = require('mongoose');
 
-exports.getRecentlyViewed = async (req, res) => {
-    try {
-        const userId = req.payload.userId; // Extract userId from the JWT payload
+exports.getRecentlyViewed = asyncHandler(async (req, res) => {
+  const { id } = req.params; // Extract user ID from the request parameters
+  console.log("Received userId:", id); // Log userId for debugging
 
-        // Validate if userId is a valid ObjectId
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return res.status(400).json({ message: 'Invalid userId', status: 400 });
-        }
+  try {
+    if (id) {
+      // Authenticated user
+      const user = await User.findById(id).populate('recentlyViewed.dishes_id'); // Only fetch recently viewed items
+    console.log(user,'this is the yuser')
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
 
-        // Find the user and populate recently viewed dishes
-        const user = await logins.findById(userId).populate('recentlyViewed.dishes_id');
-
-        // Check if user exists and has recently viewed items
-        if (user && user.recentlyViewed.length > 0) {
-            return res.status(200).json({ recentlyViewedItems: user.recentlyViewed });
-        } else {
-            return res.status(404).json({ message: 'No recently viewed items found for this user', status: 404 });
-        }
-    } catch (error) {
-        console.error('Error fetching recently viewed items:', error);
-        return res.status(500).json({ message: 'Error fetching recently viewed items', status: 500 });
+      return res.status(200).json({ message: 'Recently viewed items fetched successfully.', recentlyViewedItems: user.recentlyViewed });
+    } else {
+      // Handle guest user case
+      return res.status(200).json({ message: 'Guest user, no recently viewed items available.' });
     }
-};
+  } catch (error) {
+    console.error("Error fetching recently viewed items:", error); // Log the error
+    return res.status(500).json({ error: 'Error fetching recently viewed items.' });
+  }
+});
 
 
 // add
-exports.addRecentlyViewed = async (req, res) => {
+// exports.addRecentlyViewed = asyncHandler(async (req, res) => {
+//   const { productId, productData } = req.body;
+//   const { id } = req.params;
+//   console.log("Received userId:", id); // Log userId for debugging
+
+//   try {
+//     if (id) {
+//       // Authenticated user
+//       const user = await User.findById(id);
+//       if (!user) {
+//         return res.status(404).json({ message: 'User not found.' });
+//       }
+
+//       // Check if the product already exists in the database
+//       let product = await Product.findById(productId);
+//       if (!product) {
+//         product = new Product({
+//           _id: productId,
+//           ...productData,
+//         });
+//         await product.save(); // Save product if it doesn't exist
+//       }
+
+//       const recentlyViewed = user.recentlyViewed || [];
+//       const alreadyViewed = recentlyViewed.find(item => item.dishes_id.toString() === productId);
+
+//       if (!alreadyViewed) {
+//         recentlyViewed.unshift({
+//           dishes_id: productId,
+//           viewedAt: new Date(),
+//         });
+
+//         // Keep only the latest 5 viewed items
+//         if (recentlyViewed.length > 5) {
+//           recentlyViewed.pop();
+//         }
+
+//         user.recentlyViewed = recentlyViewed;
+//         await user.save(); // Save updated user data
+//       }
+
+//       return res.status(200).json({ message: 'Product added to recently viewed.', recentlyViewed: user.recentlyViewed });
+//     } else {
+//       // Handle guest user
+//       return res.status(200).json({ message: 'Guest user, recently viewed stored in session.' });
+//     }
+//   } catch (error) {
+//     console.error("Error adding product to recently viewed:", error); // Log the error
+//     return res.status(500).json({ error: 'Error adding product to recently viewed.' });
+//   }
+// });
+
+exports.addRecentlyViewed = asyncHandler(async (req, res) => {
+  const { productId, productData } = req.body; // Ensure productData is passed
+  const { id } = req.params;
+
+  console.log("Received userId:", id); // Log userId for debugging
+  console.log("Received data:", req.body); // Log the incoming request data
+  console.log("Product ID to add:", productId); // Log the productId
+  console.log("Product Data:", productData); // Log the product data
+
   try {
-    const userId = req.payload; // Extracted from JWT Middleware
-    const { productId, productData } = req.body;
-
-    // Check if the user exists
-    const user = await login.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if the product already exists in the database
-    let product = await Product.findById(productId);
-    if (!product) {
-      // If product does not exist, create it
-      product = new Product({
-        _id: productId,
-        ...productData,
-      });
-      await product.save();
-    }
-
-    // Add or update the recently viewed products
-    const recentlyViewed = user.recentlyViewed;
-
-    // Check if the product is already in the recently viewed list
-    const alreadyViewed = recentlyViewed.find(item => item.dishes_id.toString() === productId);
-    if (!alreadyViewed) {
-      recentlyViewed.unshift({
-        dishes_id: productId, // Ensure you're using the correct key
-        viewedAt: new Date(),
-      });
-      
-      // Keep only the latest 5 viewed items
-      if (recentlyViewed.length > 5) {
-        recentlyViewed.pop(); // Remove the oldest viewed item
+    if (id) {
+      // Authenticated user
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
       }
-      
-      user.recentlyViewed = recentlyViewed;
-      await user.save();
+
+      // Check if the product already exists in the database
+      let product = await Product.findById(productId);
+      if (!product) {
+        product = new Product({
+          _id: productId,
+          ...productData,
+        });
+        await product.save(); // Save product if it doesn't exist
+      }
+
+      const recentlyViewed = user.recentlyViewed || [];
+      const alreadyViewed = recentlyViewed.find(item => item.dishes_id.toString() === productId);
+
+      if (!alreadyViewed) {
+        recentlyViewed.unshift({
+          dishes_id: productId,
+          viewedAt: new Date(),
+          productData: productData, // Include product data here
+        });
+
+        // Keep only the latest 5 viewed items
+        if (recentlyViewed.length > 5) {
+          recentlyViewed.pop();
+        }
+
+        user.recentlyViewed = recentlyViewed;
+        await user.save(); // Save updated user data
+      }
+
+      return res.status(200).json({ message: 'Product added to recently viewed.', recentlyViewed: user.recentlyViewed });
+    } else {
+      // Handle guest user
+      return res.status(200).json({ message: 'Guest user, recently viewed stored in session.' });
     }
-
-    res.status(200).json({ message: 'Product added to recently viewed' });
   } catch (error) {
-    console.error('Error adding product to recently viewed:', error);
-    res.status(500).json({ message: 'Error adding product to recently viewed' });
+    console.error("Error adding product to recently viewed:", error); // Log the error
+    return res.status(500).json({ error: 'Error adding product to recently viewed.' });
   }
-};
+});
 
 
-exports.addGuestRecentlyViewed = async (req, res) => {
-  try {
-    const { productId, productData } = req.body;
 
-    // Implement logic to handle guest recently viewed items
-    // For example, store in a database or session if needed.
 
-    // Return success response
-    res.status(200).json({ message: 'Guest product added to recently viewed' });
-  } catch (error) {
-    console.error('Error adding guest product to recently viewed:', error);
-    res.status(500).json({ message: 'Error adding guest product to recently viewed' });
-  }
-};

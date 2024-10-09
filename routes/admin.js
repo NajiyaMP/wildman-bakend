@@ -65,7 +65,9 @@ const  jwtMiddleware  = require('../Middleware/jwtMiddleware');
 const  userjwt  = require('../Middleware/userjwt');
 
 const { Admin } = require('mongodb');
-const ClientloginController=require('../Controller/ClientloginController')
+const ClientloginController=require('../Controller/ClientloginController');
+const orderController=require('../Controller/OrderController');
+const ShippingadressController=require('../Controller/ShippingadressController');
 
 
 
@@ -218,13 +220,15 @@ router.delete('/deletesettings/:id',jwtMiddleware, settingsController.deleteSett
 
 
 
-// -------------CLIENT ROUTER----------
+// -------------CLIENT ROUTER----------////////
 
 
 // CLIET LOGIN
 router.post('/client-register',ClientloginController.registerClient);
 router.post('/client-login',ClientloginController.loginClient);
 router.post('/logoutuser',ClientloginController.logoutclient);
+router.post('/sync-guest-cart',ClientloginController.syncGuestCart);
+
 
         //  -------WITHOUT USERLOGIN-----
 
@@ -333,11 +337,11 @@ router.delete('/userdeletecolors/:id',userjwt, colorsController.deleteColorsById
 
 
 //--recently viewed
-router.get('/userrecently-viewed',userjwt,upload.array('image'), recentlyViewedController.getRecentlyViewed);
-router.post('/userrecently-viewed',userjwt, recentlyViewedController.addRecentlyViewed);
+router.get('/getuserrecently/:id',userjwt,upload.array('image'), recentlyViewedController.getRecentlyViewed);
+router.post('/userrecently-viewed/:id',userjwt, recentlyViewedController.addRecentlyViewed);
 
-router.post('/guestrecently-viewed', recentlyViewedController.addGuestRecentlyViewed);
-router.get('/userrecently-viewed',upload.array('image'), recentlyViewedController.getRecentlyViewed);
+// router.post('/guestrecently-viewed', recentlyViewedController.addGuestRecentlyViewed);
+// router.get('/userrecently-viewed',upload.array('image'), recentlyViewedController.getRecentlyViewed);
 
 
 
@@ -359,7 +363,7 @@ router.post('/sync-guest-cart',userjwt,cartController.postguestcart);
 router.get('/usergetcart/:id',userjwt, cartController.getCart);
 router.put('/userupdateCart/:id',userjwt,cartController.updateCart);
 router.delete('/userdeleteCart/:id', userjwt, cartController.deleteCart);
-router.get('/usercartcount',userjwt,cartController.countCartItems); // New route for count
+router.get('/usercartcount/:id',userjwt,cartController.countCartItems); // New route for count
 
 
 //---cart guest---
@@ -380,7 +384,20 @@ router.delete('/usercoupon/:id',userjwt, couponController.deleteCouponById);
 
 //---footer settings---
 
+////----OREDER ROUTES------////
 
+router.post('/postOrder',userjwt,orderController.postOrder); //for user
+router.get('/getOrder',jwtMiddleware,orderController.getAllOrders); //amin
+router.get('/getOrder/:id',jwtMiddleware,orderController.getOrderById);
+
+////-----shippingaddress------////
+router.post('/postshippingad', userjwt, ShippingadressController.postShippingAddress);
+router.get('/shipping-addresses', userjwt, ShippingadressController.getShippingAddresses);
+router.get('/updateshipping', userjwt, ShippingadressController.updateShippingAddress);
+router.get('/deleteshipping', userjwt, ShippingadressController.deleteShippingAddress);
+
+// router.get('/getshippingad',userjwt,ShippingadressController.getshippingad); //amin
+// router.get('/getshippingad/:id',userjwt,ShippingadressController.getshippingadbyId);
 
 
 module.exports = router

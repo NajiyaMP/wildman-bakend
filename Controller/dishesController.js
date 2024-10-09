@@ -2,7 +2,6 @@
 const asyncHandler = require('express-async-handler');
 const DishesModel = require('../Model/DishesModel');
 
-
 exports.postDishes = asyncHandler(async (req, res) => {
     const {
         oldprice,
@@ -19,18 +18,26 @@ exports.postDishes = asyncHandler(async (req, res) => {
 
     const files = req.files || [];
     const images = new Map();
-    console.log(req.body,'this is the body')
-    console.log(req.files,'this is the files')
 
-    // Group images by color based on field names like 'images_Yellow_0'
     files.forEach((file) => {
         const colorMatch = file.fieldname.match(/images_(.*)_\d+/); // Extract color from field name
+        const stockMatch = file.fieldname.match(/stock_(.*)_\d+/); // Extract stock from field name
+
         if (colorMatch) {
             const color = colorMatch[1]; // Get the color (e.g., 'Yellow')
+            let stock = req.body[`stock_${color}`] || 0; // Get stock from body, default to 0 if not provided
+
+            // Ensure stock is treated as a number (convert from array or string if necessary)
+            if (Array.isArray(stock)) {
+                stock = stock[0]; // If it's an array, take the first value
+            }
+            stock = Number(stock); // Ensure it's a number
+
             if (!images.has(color)) {
                 images.set(color, []); // Initialize an array for the color if it doesn't exist
             }
-            images.get(color).push(file.filename); // Push the filename into the array for that color
+
+            images.get(color).push({ image: file.filename, stock }); // Push the image and stock into the array
         }
     });
 
@@ -59,6 +66,63 @@ exports.postDishes = asyncHandler(async (req, res) => {
         res.status(500).send('An error occurred while posting the dish');
     }
 });
+
+// exports.postDishes = asyncHandler(async (req, res) => {
+//     const {
+//         oldprice,
+//         newprice,
+//         dishes,
+//         category,
+//         manufacturer,
+//         productcare,
+//         description,
+//         Itemnumber,
+//         features,
+//         subcategory,
+//     } = req.body;
+
+//     const files = req.files || [];
+//     const images = new Map();
+//     console.log(req.body,'this is the body')
+//     console.log(req.files,'this is the files')
+
+//     // Group images by color based on field names like 'images_Yellow_0'
+//     files.forEach((file) => {
+//         const colorMatch = file.fieldname.match(/images_(.*)_\d+/); // Extract color from field name
+//         if (colorMatch) {
+//             const color = colorMatch[1]; // Get the color (e.g., 'Yellow')
+//             if (!images.has(color)) {
+//                 images.set(color, []); // Initialize an array for the color if it doesn't exist
+//             }
+//             images.get(color).push(file.filename); // Push the filename into the array for that color
+//         }
+//     });
+
+//     try {
+//         // Ensure that images are properly converted to an object
+//         const newDish = await DishesModel.create({
+//             oldprice,
+//             newprice,
+//             dishes,
+//             productcare,
+//             manufacturer,
+//             category,
+//             description,
+//             Itemnumber,
+//             features,
+//             images: Object.fromEntries(images), // Convert Map to object for storage
+//             subcategory,
+//         });
+
+//         res.status(200).json({
+//             message: 'Dish posted successfully',
+//             dish: newDish,
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).send('An error occurred while posting the dish');
+//     }
+// });
 
 
 
@@ -157,48 +221,71 @@ exports.getDishes = asyncHandler(async (req, res) => {
     }
 });
 
-
-
 exports.getDishesById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     try {
-        // Validate ID format
         if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid ID format'
-            });
+            return res.status(400).json({ success: false, message: 'Invalid ID format' });
         }
 
-        // Find the dish by ID and populate related fields
         const dish = await DishesModel.findById(id)
             .populate('category')
             .populate('subcategory');
 
-        // Check if dish exists
         if (!dish) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Dish not found'
-            });
+            return res.status(404).json({ success: false, message: 'Dish not found' });
         }
 
-        // Return the dish data
-        res.status(200).json({
-            success: true,
-            data: dish
-        });
+        res.status(200).json({ success: true, data: dish });
 
     } catch (err) {
         console.error('Error fetching dish by ID:', err);
-        res.status(500).json({ 
-            success: false, 
-            message: 'An error occurred while fetching the dish',
-            error: err.message
-        });
+        res.status(500).json({ success: false, message: 'An error occurred while fetching the dish', error: err.message });
     }
 });
+
+
+// exports.getDishesById = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
+
+//     try {
+//         // Validate ID format
+//         if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+//             return res.status(400).json({ 
+//                 success: false, 
+//                 message: 'Invalid ID format'
+//             });
+//         }
+
+//         // Find the dish by ID and populate related fields
+//         const dish = await DishesModel.findById(id)
+//             .populate('category')
+//             .populate('subcategory');
+
+//         // Check if dish exists
+//         if (!dish) {
+//             return res.status(404).json({ 
+//                 success: false, 
+//                 message: 'Dish not found'
+//             });
+//         }
+
+//         // Return the dish data
+//         res.status(200).json({
+//             success: true,
+//             data: dish
+//         });
+
+//     } catch (err) {
+//         console.error('Error fetching dish by ID:', err);
+//         res.status(500).json({ 
+//             success: false, 
+//             message: 'An error occurred while fetching the dish',
+//             error: err.message
+//         });
+//     }
+// });
 
 exports.putDishesById = asyncHandler(async (req, res) => {
     const { id } = req.params;

@@ -96,14 +96,15 @@ exports.getCart = asyncHandler(async (req, res) => {
 });
 
 // Update cart item quantity for authenticated users
-exports.updateCart = asyncHandler(async (req, res) => {
+exports.updateCart = asyncHandler(async (req, res) => { 
   const { id } = req.params;
-  const {userId , quantity } = req.body;
+  const { userId, quantity, color } = req.body; // Get the color as well
 
   try {
     const user = await User.findById(userId);
     if (user) {
-      const item = user.cart.find(item => item.dishes_id.toString() === id);
+      // Check both dishes_id and color to identify the correct cart item
+      const item = user.cart.find(item => item.dishes_id.toString() === id && item.color === color);
       if (item) {
         item.quantity = quantity;
         await user.save();
@@ -116,6 +117,7 @@ exports.updateCart = asyncHandler(async (req, res) => {
     return res.status(500).json({ error: 'Error updating cart.' });
   }
 });
+
 
 // Delete cart item for authenticated users
 exports.deleteCart = asyncHandler(async (req, res) => {
@@ -146,6 +148,14 @@ try {
 
   // Save the updated user document
   await user.save();
+  // Recalculate the cart count after the item is removed
+  const cartCount = user.cart.reduce((total, item) => total + item.quantity, 0);
+
+  res.status(200).json({
+    message: 'Cart item deleted successfully',
+    cart: user.cart,
+    cartCount, // Include the updated cart count in the response
+  });
 
   res.status(200).json({ message: 'Cart item deleted successfully', cart: user.cart });
 } catch (error) {
@@ -155,22 +165,29 @@ try {
 });
 
 exports.countCartItems = asyncHandler(async (req, res) => {
-  const id = req.payload; // Extracted from JWT middleware
+  const { id } = req.params; // Extract User ID from params
+  console.log("Fetching cart count for userId:", id); // Log userId for debugging
 
-  // Find the user in the database
-  const user = await User.findById(id);
+  try {
+    if (id) {
+      // Authenticated user
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
 
-  if (!user) {
-      return res.status(404).json({ message: 'User not found', status: 404 });
+      // Count the number of items in the user's cart based on quantity
+      const cartCount = user.cart.reduce((total, item) => total + item.quantity, 0);
+
+      return res.status(200).json({ cartCount });
+    } else {
+      return res.status(400).json({ message: 'User ID is missing.' });
+    }
+  } catch (error) {
+    console.error("Error fetching cart count:", error); // Log the error
+    return res.status(500).json({ error: 'Error fetching cart count.' });
   }
-
-  // Count the number of items in the user's cart
-  const cartCount = user.cart.reduce((total, item) => total + item.quantity, 0);
-
-  return res.status(200).json({ cartCount });
 });
-
-
 
 // const asyncHandler = require('express-async-handler');
 // const Cart = require('../Model/CartModel'); // Adjust the path as needed
